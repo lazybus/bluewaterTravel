@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
-import { buildPointValue, mapPoiEditorRecord, toNullableFloat, toNullableInteger } from "@/lib/admin/poi-api";
+import { fetchPoiMediaRows, POI_MEDIA_BUCKET } from "@/lib/admin/poi-media";
+import {
+  buildPointValue,
+  mapPoiEditorRecord,
+  toNullableFloat,
+  toNullableInteger,
+  toTextArray,
+} from "@/lib/admin/poi-api";
 import type { PoiEditorRecord } from "@/lib/admin/poi-records";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireCuratorActor } from "@/lib/supabase/auth";
@@ -17,6 +24,7 @@ function isPoiEditorRecord(value: unknown): value is PoiEditorRecord {
     typeof candidate.poiKind === "string" &&
     Array.isArray(candidate.hours) &&
     Array.isArray(candidate.warnings) &&
+    Array.isArray(candidate.images) &&
     typeof candidate.activityProfile === "object"
   );
 }
@@ -31,14 +39,18 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/admin/pois/
   const { poiId } = await ctx.params;
   const adminClient = createSupabaseAdminClient();
 
-  const [{ data: poi, error: poiError }, { data: hours, error: hoursError }, { data: warnings, error: warningsError }, { data: activityProfile, error: activityError }] = await Promise.all([
+  const [{ data: poi, error: poiError }, { data: hours, error: hoursError }, { data: warnings, error: warningsError }, { data: activityProfile, error: activityError }, { data: foodProfile, error: foodError }, { data: accommodationProfile, error: accommodationError }, { data: logisticsProfile, error: logisticsError }, { data: media, error: mediaError }] = await Promise.all([
     adminClient.from("poi_admin_view").select("*").eq("id", poiId).maybeSingle(),
     adminClient.from("poi_hours").select("*").eq("poi_id", poiId).order("day_of_week", { ascending: true }),
     adminClient.from("poi_warnings").select("*").eq("poi_id", poiId).order("created_at", { ascending: true }),
     adminClient.from("activity_profiles").select("*").eq("poi_id", poiId).maybeSingle(),
+    adminClient.from("food_profiles").select("*").eq("poi_id", poiId).maybeSingle(),
+    adminClient.from("accommodation_profiles").select("*").eq("poi_id", poiId).maybeSingle(),
+    adminClient.from("logistics_profiles").select("*").eq("poi_id", poiId).maybeSingle(),
+    adminClient.from("poi_media").select("*").eq("poi_id", poiId).order("sort_order", { ascending: true }),
   ]);
 
-  const firstError = poiError ?? hoursError ?? warningsError ?? activityError;
+  const firstError = poiError ?? hoursError ?? warningsError ?? activityError ?? foodError ?? accommodationError ?? logisticsError ?? mediaError;
   if (firstError) {
     return NextResponse.json({ error: firstError.message }, { status: 500 });
   }
@@ -53,6 +65,10 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/admin/pois/
       hours: hours ?? [],
       warnings: warnings ?? [],
       activityProfile,
+      foodProfile,
+      accommodationProfile,
+      logisticsProfile,
+      media: media ?? [],
     }),
   });
 }
@@ -176,6 +192,49 @@ export async function PUT(request: Request, ctx: RouteContext<"/api/admin/pois/[
     }
   }
 
+  const profileCleanup = await Promise.all([
+    body.poiKind === "food"
+      ? adminClient.from("food_profiles").upsert({
+          poi_id: poiId,
+          cuisine_types: toTextArray(body.foodProfile.cuisineTypes),
+          dining_style: body.foodProfile.diningStyle || null,
+          price_band: body.foodProfile.priceBand || null,
+          menu_url: body.foodProfile.menuUrl || null,
+          patio: body.foodProfile.patio,
+          takeout_available: body.foodProfile.takeoutAvailable,
+          reservation_recommended: body.foodProfile.reservationRecommended,
+        })
+      : adminClient.from("food_profiles").delete().eq("poi_id", poiId),
+    body.poiKind === "accommodation"
+      ? adminClient.from("accommodation_profiles").upsert({
+          poi_id: poiId,
+          accommodation_type: body.accommodationProfile.accommodationType || null,
+          capacity_min: toNullableInteger(body.accommodationProfile.capacityMin),
+          capacity_max: toNullableInteger(body.accommodationProfile.capacityMax),
+          roofed: body.accommodationProfile.roofed,
+          glamping: body.accommodationProfile.glamping,
+          camping: body.accommodationProfile.camping,
+          direct_booking: body.accommodationProfile.directBooking,
+        })
+      : adminClient.from("accommodation_profiles").delete().eq("poi_id", poiId),
+    body.poiKind === "logistics"
+      ? adminClient.from("logistics_profiles").upsert({
+          poi_id: poiId,
+          logistics_type: body.logisticsProfile.logisticsType || null,
+          fuel_types: toTextArray(body.logisticsProfile.fuelTypes),
+          charger_types: toTextArray(body.logisticsProfile.chargerTypes),
+          potable_water: body.logisticsProfile.potableWater,
+          seasonal_notes: body.logisticsProfile.seasonalNotes || null,
+        })
+      : adminClient.from("logistics_profiles").delete().eq("poi_id", poiId),
+  ]);
+
+  const profileCleanupError = profileCleanup.find((result) => result.error)?.error;
+
+  if (profileCleanupError) {
+    return NextResponse.json({ error: profileCleanupError.message }, { status: 500 });
+  }
+
   return NextResponse.json({ ok: true });
 }
 
@@ -188,6 +247,26 @@ export async function DELETE(_request: Request, ctx: RouteContext<"/api/admin/po
 
   const { poiId } = await ctx.params;
   const adminClient = createSupabaseAdminClient();
+  const { data: mediaRows, error: mediaError } = await fetchPoiMediaRows(adminClient, poiId);
+
+  if (mediaError) {
+    return NextResponse.json({ error: mediaError.message }, { status: 500 });
+  }
+
+  const storagePaths = (mediaRows ?? [])
+    .map((image) => image.storage_path)
+    .filter((storagePath): storagePath is string => Boolean(storagePath));
+
+  if (storagePaths.length > 0) {
+    const { error: storageError } = await adminClient.storage
+      .from(POI_MEDIA_BUCKET)
+      .remove(storagePaths);
+
+    if (storageError) {
+      return NextResponse.json({ error: storageError.message }, { status: 500 });
+    }
+  }
+
   const { error } = await adminClient.from("pois").delete().eq("id", poiId);
 
   if (error) {

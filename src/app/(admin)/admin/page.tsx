@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const adminAreas = [
-  "POI curation",
+  "Map point curation",
   "Seasonality and hours",
   "Warnings and restrictions",
   "External source monitoring",
@@ -35,15 +35,15 @@ export default function AdminHomePage() {
           <div>
             <p className="eyebrow">Working CRUD surface</p>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">
-              The first POI editor now covers core POI fields plus hours, warnings,
-              and activity metadata through authenticated admin routes.
+              The central map-point editor now covers core location fields, images,
+              hours, warnings, and subtype metadata through authenticated admin routes.
             </p>
           </div>
           <Link
             href="/admin/pois"
             className="rounded-full bg-lagoon px-5 py-3 text-sm font-semibold text-foam transition hover:bg-lagoon-strong"
           >
-            Open POI workspace
+            Open map point workspace
           </Link>
         </div>
       </section>

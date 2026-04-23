@@ -108,13 +108,45 @@ export async function saveOfflineTripDraft(tripDraft: OfflineTripDraft) {
 export async function queueTripDraftMutation(
   tripDraft: OfflineTripDraft,
   operation: PendingMutation["operation"],
+  baseTripVersion: number,
 ) {
   await offlineDb.pendingMutations.add({
+    tripId: tripDraft.tripId,
     entityType: "trip",
     entityId: tripDraft.tripId,
     operation,
+    baseTripVersion,
     payload: tripDraft,
     clientMutationId: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
+    retryCount: 0,
   });
+}
+
+export async function getTripPendingMutations(tripId: string) {
+  return offlineDb.pendingMutations.where("tripId").equals(tripId).sortBy("createdAt");
+}
+
+export async function clearPendingMutations(ids: number[]) {
+  if (ids.length === 0) {
+    return;
+  }
+
+  await offlineDb.pendingMutations.bulkDelete(ids);
+}
+
+export async function bumpPendingMutationRetryCount(ids: number[]) {
+  await Promise.all(
+    ids.map(async (id) => {
+      const mutation = await offlineDb.pendingMutations.get(id);
+
+      if (!mutation) {
+        return;
+      }
+
+      await offlineDb.pendingMutations.update(id, {
+        retryCount: (mutation.retryCount ?? 0) + 1,
+      });
+    }),
+  );
 }

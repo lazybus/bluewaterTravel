@@ -6,6 +6,14 @@ export const poiKinds = [
   "viewpoint",
 ] as const;
 
+export const recordTypeOptions = [
+  { value: "activity", label: "Attraction / Activity" },
+  { value: "food", label: "Restaurant / Food" },
+  { value: "accommodation", label: "Accommodation" },
+  { value: "logistics", label: "Logistics / Survival" },
+  { value: "viewpoint", label: "Viewpoint" },
+] as const;
+
 export const warningTypes = [
   "reservation",
   "ferry",
@@ -67,6 +75,42 @@ export type PoiActivityProfileRecord = {
   weatherSensitivity: string;
 };
 
+export type PoiFoodProfileRecord = {
+  cuisineTypes: string;
+  diningStyle: string;
+  priceBand: string;
+  menuUrl: string;
+  patio: boolean;
+  takeoutAvailable: boolean;
+  reservationRecommended: boolean;
+};
+
+export type PoiAccommodationProfileRecord = {
+  accommodationType: string;
+  capacityMin: string;
+  capacityMax: string;
+  roofed: boolean;
+  glamping: boolean;
+  camping: boolean;
+  directBooking: boolean;
+};
+
+export type PoiLogisticsProfileRecord = {
+  logisticsType: string;
+  fuelTypes: string;
+  chargerTypes: string;
+  potableWater: boolean;
+  seasonalNotes: string;
+};
+
+export type PoiImageRecord = {
+  id?: string;
+  url: string;
+  altText: string;
+  caption: string;
+  storagePath?: string;
+};
+
 export type PoiEditorRecord = {
   id?: string;
   slug: string;
@@ -86,6 +130,10 @@ export type PoiEditorRecord = {
   hours: PoiHourRecord[];
   warnings: PoiWarningRecord[];
   activityProfile: PoiActivityProfileRecord;
+  foodProfile: PoiFoodProfileRecord;
+  accommodationProfile: PoiAccommodationProfileRecord;
+  logisticsProfile: PoiLogisticsProfileRecord;
+  images: PoiImageRecord[];
 };
 
 export function createEmptyPoiRecord(): PoiEditorRecord {
@@ -138,5 +186,35 @@ export function createEmptyPoiRecord(): PoiEditorRecord {
       crowdIntensity: "high",
       weatherSensitivity: "medium",
     },
+    foodProfile: {
+      cuisineTypes: "",
+      diningStyle: "",
+      priceBand: "",
+      menuUrl: "",
+      patio: false,
+      takeoutAvailable: false,
+      reservationRecommended: false,
+    },
+    accommodationProfile: {
+      accommodationType: "",
+      capacityMin: "",
+      capacityMax: "",
+      roofed: true,
+      glamping: false,
+      camping: false,
+      directBooking: false,
+    },
+    logisticsProfile: {
+      logisticsType: "",
+      fuelTypes: "",
+      chargerTypes: "",
+      potableWater: false,
+      seasonalNotes: "",
+    },
+    images: [],
   };
+}
+
+export function getRecordTypeLabel(poiKind: PoiKind) {
+  return recordTypeOptions.find((option) => option.value === poiKind)?.label ?? poiKind;
 }

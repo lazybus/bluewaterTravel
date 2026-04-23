@@ -2,12 +2,15 @@ import Dexie, { type Table } from "dexie";
 
 export type PendingMutation = {
   id?: number;
+  tripId: string;
   entityType: "trip" | "tripDay" | "tripItem";
   entityId: string;
   operation: "insert" | "update" | "delete" | "reorder";
+  baseTripVersion: number;
   payload: Record<string, unknown>;
   clientMutationId: string;
   createdAt: string;
+  retryCount?: number;
 };
 
 export type ActiveTripSnapshot = {
@@ -74,7 +77,7 @@ class BluewaterOfflineDatabase extends Dexie {
     this.version(1).stores({
       activeTripSnapshots: "tripId, updatedAt",
       tripDrafts: "tripId, updatedAt",
-      pendingMutations: "++id, entityType, entityId, createdAt",
+      pendingMutations: "++id, tripId, entityType, entityId, createdAt",
       poiCache: "id, poiKind, cachedAt",
       downloadedRegions: "id, downloadedAt",
     });

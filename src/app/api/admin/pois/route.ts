@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { mapPoiSummary, buildPointValue, toNullableFloat, toNullableInteger } from "@/lib/admin/poi-api";
+import {
+  mapPoiSummary,
+  buildPointValue,
+  toNullableFloat,
+  toNullableInteger,
+  toTextArray,
+} from "@/lib/admin/poi-api";
 import type { PoiEditorRecord } from "@/lib/admin/poi-records";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireCuratorActor } from "@/lib/supabase/auth";
@@ -17,6 +23,7 @@ function isPoiEditorRecord(value: unknown): value is PoiEditorRecord {
     typeof candidate.poiKind === "string" &&
     Array.isArray(candidate.hours) &&
     Array.isArray(candidate.warnings) &&
+    Array.isArray(candidate.images) &&
     typeof candidate.activityProfile === "object"
   );
 }
@@ -138,6 +145,55 @@ export async function POST(request: Request) {
       elevation_gain_m: toNullableInteger(profile.elevationGainM),
       crowd_intensity: profile.crowdIntensity || null,
       weather_sensitivity: profile.weatherSensitivity || null,
+    });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
+
+  if (body.poiKind === "food") {
+    const { error } = await adminClient.from("food_profiles").upsert({
+      poi_id: poiId,
+      cuisine_types: toTextArray(body.foodProfile.cuisineTypes),
+      dining_style: body.foodProfile.diningStyle || null,
+      price_band: body.foodProfile.priceBand || null,
+      menu_url: body.foodProfile.menuUrl || null,
+      patio: body.foodProfile.patio,
+      takeout_available: body.foodProfile.takeoutAvailable,
+      reservation_recommended: body.foodProfile.reservationRecommended,
+    });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
+
+  if (body.poiKind === "accommodation") {
+    const { error } = await adminClient.from("accommodation_profiles").upsert({
+      poi_id: poiId,
+      accommodation_type: body.accommodationProfile.accommodationType || null,
+      capacity_min: toNullableInteger(body.accommodationProfile.capacityMin),
+      capacity_max: toNullableInteger(body.accommodationProfile.capacityMax),
+      roofed: body.accommodationProfile.roofed,
+      glamping: body.accommodationProfile.glamping,
+      camping: body.accommodationProfile.camping,
+      direct_booking: body.accommodationProfile.directBooking,
+    });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
+
+  if (body.poiKind === "logistics") {
+    const { error } = await adminClient.from("logistics_profiles").upsert({
+      poi_id: poiId,
+      logistics_type: body.logisticsProfile.logisticsType || null,
+      fuel_types: toTextArray(body.logisticsProfile.fuelTypes),
+      charger_types: toTextArray(body.logisticsProfile.chargerTypes),
+      potable_water: body.logisticsProfile.potableWater,
+      seasonal_notes: body.logisticsProfile.seasonalNotes || null,
     });
 
     if (error) {

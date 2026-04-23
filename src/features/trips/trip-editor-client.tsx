@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { validateTripDay } from "@/lib/domain/scheduling";
 import {
   getOrCreateOfflineTripDraft,
@@ -8,6 +8,7 @@ import {
   saveOfflineTripDraft,
 } from "@/lib/offline/trips";
 import type { OfflineTripDraft, OfflineTripItem } from "@/lib/offline/db";
+import { syncTripMutations } from "@/lib/sync/client";
 
 const travelDurations = {
   "Breakfast in Tobermory->The Grotto hike": 35,
@@ -47,7 +48,49 @@ function toIsoValue(timestamp: string) {
 export function TripEditorClient({ tripId }: { tripId: string }) {
   const [tripDraft, setTripDraft] = useState<OfflineTripDraft | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [syncState, setSyncState] = useState<"idle" | "syncing" | "conflict" | "error">("idle");
   const [isPending, startTransition] = useTransition();
+
+  const attemptSync = useCallback(
+    async (currentDraft: OfflineTripDraft | null = tripDraft) => {
+      if (!currentDraft) {
+        return;
+      }
+
+      setSyncState("syncing");
+      const result = await syncTripMutations(tripId);
+
+      if (result.status === "synced") {
+        setTripDraft((latestDraft) =>
+          latestDraft
+            ? {
+                ...latestDraft,
+                version: result.nextTripVersion,
+              }
+            : latestDraft,
+        );
+        setSaveMessage(`Synced to server at ${new Date().toLocaleTimeString()}.`);
+        setSyncState("idle");
+        return;
+      }
+
+      if (result.status === "conflict") {
+        setSaveMessage(`Sync conflict: ${result.message}`);
+        setSyncState("conflict");
+        return;
+      }
+
+      if (result.status === "queued") {
+        setSaveMessage(result.message);
+        setSyncState("idle");
+        return;
+      }
+
+      setSaveMessage(result.message);
+      setSyncState("error");
+    },
+    [tripDraft, tripId],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -62,6 +105,22 @@ export function TripEditorClient({ tripId }: { tripId: string }) {
       isMounted = false;
     };
   }, [tripId]);
+
+  useEffect(() => {
+    function handleOnline() {
+      if (!tripDraft) {
+        return;
+      }
+
+      void attemptSync(tripDraft);
+    }
+
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+    };
+  }, [attemptSync, tripDraft]);
 
   if (!tripDraft) {
     return (
@@ -153,14 +212,17 @@ export function TripEditorClient({ tripId }: { tripId: string }) {
           return;
         }
 
+        const baseTripVersion = tripDraft.version;
+
         const nextDraft = await saveOfflineTripDraft({
           ...tripDraft,
           version: tripDraft.version + 1,
         });
 
-        await queueTripDraftMutation(nextDraft, "update");
+        await queueTripDraftMutation(nextDraft, "update", baseTripVersion);
         setTripDraft(nextDraft);
-        setSaveMessage(`Saved locally at ${new Date(nextDraft.updatedAt).toLocaleTimeString()}.`);
+        setSaveMessage(`Saved locally at ${new Date(nextDraft.updatedAt).toLocaleTimeString()}. Attempting sync...`);
+        await attemptSync(nextDraft);
       })();
     });
   }
@@ -181,6 +243,15 @@ export function TripEditorClient({ tripId }: { tripId: string }) {
           </div>
           <div className="flex flex-col items-start gap-2 text-sm text-ink-soft md:items-end">
             <span>Trip version {tripDraft.version}</span>
+            <span>
+              {syncState === "syncing"
+                ? "Syncing queued edits"
+                : syncState === "conflict"
+                  ? "Conflict detected"
+                  : syncState === "error"
+                    ? "Sync retry needed"
+                    : "Ready"}
+            </span>
             <span>{saveMessage ?? "No unsynced save yet."}</span>
           </div>
         </div>
@@ -248,7 +319,7 @@ export function TripEditorClient({ tripId }: { tripId: string }) {
               disabled={isPending}
               className="rounded-full bg-lagoon px-5 py-3 text-sm font-semibold text-foam transition hover:bg-lagoon-strong disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isPending ? "Saving..." : "Save locally"}
+              {isPending ? "Saving..." : "Save and sync"}
             </button>
           </div>
         </article>

@@ -1,0 +1,696 @@
+{
+  "generatedAt": "2026-04-22T19:12:15.762Z",
+  "mode": "dry-run",
+  "query": {
+    "latitude": 45.25,
+    "longitude": -81.67,
+    "radius": 25000,
+    "municipality": "Tobermory",
+    "categories": [
+      "food"
+    ]
+  },
+  "counts": {
+    "rawElementCount": 12,
+    "normalizedCandidateCount": 12,
+    "displayedCandidateCount": 12
+  },
+  "skipped": {
+    "missingName": 0,
+    "missingCoordinates": 0,
+    "unsupportedType": 0,
+    "duplicateCandidate": 0,
+    "hiddenOrAbandoned": 0,
+    "lowSignalName": 0
+  },
+  "reviewGroups": [
+    {
+      "key": "food:shipwreck-lee-s",
+      "poiKind": "food",
+      "name": "Shipwreck Lee's",
+      "occurrenceCount": 2,
+      "records": [
+        {
+          "name": "Shipwreck Lee's",
+          "poiKind": "food",
+          "address": "3 Eliza Street, Tobermory, N0H 2R0",
+          "municipality": "Tobermory",
+          "latitude": 45.2566023,
+          "longitude": -81.6645238,
+          "phone": "+1-705-888-5946",
+          "website": "https://shipwrecklees.com/",
+          "source": "osm:way:375278112"
+        },
+        {
+          "name": "Shipwreck Lee's",
+          "poiKind": "food",
+          "address": "",
+          "municipality": "Tobermory",
+          "latitude": 45.2545465,
+          "longitude": -81.6651362,
+          "phone": "+1-705-888-5946",
+          "website": "https://shipwrecklees.com/",
+          "source": "osm:way:976101346"
+        }
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "name": "Coconuts Joe's",
+      "poiKind": "food",
+      "latitude": 45.2570266,
+      "longitude": -81.6617103,
+      "address": "53 Bay Street South, Tobermory",
+      "municipality": "Tobermory",
+      "phone": "",
+      "website": "https://www.coconutjoestobermory.com/",
+      "bookingUrl": "",
+      "source": "osm:node:7383274488",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "",
+        "diningStyle": "restaurant",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 17
+    },
+    {
+      "name": "Crowsnest Pub",
+      "poiKind": "food",
+      "latitude": 45.2547877,
+      "longitude": -81.665476,
+      "address": "5 Bay Street South, Tobermory, N0H 2R0",
+      "municipality": "Tobermory",
+      "phone": "+1-519-596-2575",
+      "website": "http://www.crowsnestpub.ca/",
+      "bookingUrl": "",
+      "source": "osm:way:125267331",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "burger",
+        "diningStyle": "restaurant",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 22
+    },
+    {
+      "name": "Della Rocca Pizzeria",
+      "poiKind": "food",
+      "latitude": 45.2548698,
+      "longitude": -81.6628781,
+      "address": "30 Bay Street South",
+      "municipality": "Tobermory",
+      "phone": "",
+      "website": "",
+      "bookingUrl": "",
+      "source": "osm:node:7826716985",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "pizza",
+        "diningStyle": "fast_food",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 11
+    },
+    {
+      "name": "Grandview Motel & Dining Room",
+      "poiKind": "food",
+      "latitude": 45.2588224,
+      "longitude": -81.6601704,
+      "address": "11 Earl Street, Tobermory, N0H 2R0",
+      "municipality": "Tobermory",
+      "phone": "+1-519-596-2220",
+      "website": "https://www.grandview-tobermory.com/",
+      "bookingUrl": "",
+      "source": "osm:way:279672746",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "regional",
+        "diningStyle": "restaurant",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "motel",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 22
+    },
+    {
+      "name": "Las Chulas",
+      "poiKind": "food",
+      "latitude": 45.2516548,
+      "longitude": -81.6631077,
+      "address": "7405 Highway 6, Tobermory",
+      "municipality": "Tobermory",
+      "phone": "",
+      "website": "",
+      "bookingUrl": "",
+      "source": "osm:way:520306579",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "",
+        "diningStyle": "restaurant",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 12
+    },
+    {
+      "name": "Shipwreck Lee's",
+      "poiKind": "food",
+      "latitude": 45.2566023,
+      "longitude": -81.6645238,
+      "address": "3 Eliza Street, Tobermory, N0H 2R0",
+      "municipality": "Tobermory",
+      "phone": "+1-705-888-5946",
+      "website": "https://shipwrecklees.com/",
+      "bookingUrl": "",
+      "source": "osm:way:375278112",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "chicken, fish, fish_and_chips",
+        "diningStyle": "restaurant",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 22
+    },
+    {
+      "name": "Shipwreck Lee's",
+      "poiKind": "food",
+      "latitude": 45.2545465,
+      "longitude": -81.6651362,
+      "address": "",
+      "municipality": "Tobermory",
+      "phone": "+1-705-888-5946",
+      "website": "https://shipwrecklees.com/",
+      "bookingUrl": "",
+      "source": "osm:way:976101346",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "",
+        "diningStyle": "restaurant",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 12
+    },
+    {
+      "name": "The Coffee Shop",
+      "poiKind": "food",
+      "latitude": 45.2544877,
+      "longitude": -81.6637061,
+      "address": "18 Bay Street South",
+      "municipality": "Tobermory",
+      "phone": "+1 5195962705",
+      "website": "",
+      "bookingUrl": "",
+      "source": "osm:node:7826602487",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "sandwich",
+        "diningStyle": "fast_food",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 15
+    },
+    {
+      "name": "The Fish & Chip Place",
+      "poiKind": "food",
+      "latitude": 45.2546017,
+      "longitude": -81.6633236,
+      "address": "Tobermory, N0H 2R0",
+      "municipality": "Tobermory",
+      "phone": "+1-519-596-8380",
+      "website": "https://www.thefishandchipplace.com/",
+      "bookingUrl": "",
+      "source": "osm:node:3400212343",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "fish_and_chips",
+        "diningStyle": "restaurant",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": true,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 21
+    },
+    {
+      "name": "The Hungry Hiker",
+      "poiKind": "food",
+      "latitude": 45.2505153,
+      "longitude": -81.6625674,
+      "address": "",
+      "municipality": "Tobermory",
+      "phone": "",
+      "website": "",
+      "bookingUrl": "",
+      "source": "osm:node:12222756655",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "",
+        "diningStyle": "restaurant",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 1
+    },
+    {
+      "name": "The Lighthouse Steak",
+      "poiKind": "food",
+      "latitude": 45.2552636,
+      "longitude": -81.66618,
+      "address": "",
+      "municipality": "Tobermory",
+      "phone": "",
+      "website": "",
+      "bookingUrl": "",
+      "source": "osm:way:125267336",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "steak",
+        "diningStyle": "restaurant",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 2
+    },
+    {
+      "name": "The Tobermory Brewing Co & Grill",
+      "poiKind": "food",
+      "latitude": 45.2547073,
+      "longitude": -81.6629964,
+      "address": "28 Bay Street South, Tobermory, N0H 2R0",
+      "municipality": "Tobermory",
+      "phone": "+1-519-596-8181",
+      "website": "https://www.tobermorybrewingco.ca/",
+      "bookingUrl": "",
+      "source": "osm:way:450094531",
+      "summary": "",
+      "description": "",
+      "isPublished": false,
+      "hours": [],
+      "warnings": [],
+      "activityProfile": {
+        "defaultDurationMinutes": "",
+        "minDurationMinutes": "",
+        "maxDurationMinutes": "",
+        "trailDifficulty": "",
+        "distanceKm": "",
+        "elevationGainM": "",
+        "crowdIntensity": "",
+        "weatherSensitivity": ""
+      },
+      "foodProfile": {
+        "cuisineTypes": "steak_house",
+        "diningStyle": "restaurant",
+        "priceBand": "",
+        "menuUrl": "",
+        "patio": false,
+        "takeoutAvailable": false,
+        "reservationRecommended": false
+      },
+      "accommodationProfile": {
+        "accommodationType": "",
+        "capacityMin": "",
+        "capacityMax": "",
+        "roofed": true,
+        "glamping": false,
+        "camping": false,
+        "directBooking": false
+      },
+      "logisticsProfile": {
+        "logisticsType": "",
+        "fuelTypes": "",
+        "chargerTypes": "",
+        "potableWater": false,
+        "seasonalNotes": ""
+      },
+      "score": 22
+    }
+  ]
+}

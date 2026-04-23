@@ -6,7 +6,8 @@
     "dev": "next dev --port 3002",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "import:pois:osm": "node ./scripts/import-osm-pois.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

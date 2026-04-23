@@ -1,14 +1,28 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import {
+  type ChangeEvent,
+  type DragEvent,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import {
   createEmptyPoiRecord,
-  poiKinds,
+  getRecordTypeLabel,
+  recordTypeOptions,
   warningSeverities,
   warningTypes,
   type PoiEditorRecord,
+  type PoiImageRecord,
   type PoiSummaryRecord,
 } from "@/lib/admin/poi-records";
+
+type GalleryImageState = PoiImageRecord & {
+  clientId: string;
+  file?: File;
+};
 
 async function parseResponse<T>(response: Response): Promise<T> {
   const body = (await response.json()) as T & { error?: string };
@@ -20,16 +34,70 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return body;
 }
 
+function createPersistedGalleryImage(image: PoiImageRecord): GalleryImageState {
+  return {
+    ...image,
+    clientId: image.id ?? crypto.randomUUID(),
+  };
+}
+
+function createStagedGalleryImage(file: File): GalleryImageState {
+  return {
+    clientId: crypto.randomUUID(),
+    url: URL.createObjectURL(file),
+    altText: "",
+    caption: "",
+    file,
+  };
+}
+
+function revokeGalleryImagePreview(image: GalleryImageState) {
+  if (image.file) {
+    URL.revokeObjectURL(image.url);
+  }
+}
+
+function toEditorImage(image: GalleryImageState): PoiImageRecord {
+  return {
+    id: image.id,
+    url: image.url,
+    altText: image.altText,
+    caption: image.caption,
+    storagePath: image.storagePath,
+  };
+}
+
+function isPersistedGalleryImage(
+  image: GalleryImageState,
+): image is GalleryImageState & { id: string } {
+  return typeof image.id === "string" && image.id.length > 0;
+}
+
 export function PoiWorkspaceClient() {
   const [pois, setPois] = useState<PoiSummaryRecord[]>([]);
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
   const [editor, setEditor] = useState<PoiEditorRecord>(createEmptyPoiRecord());
+  const [galleryImages, setGalleryImages] = useState<GalleryImageState[]>([]);
+  const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
+  const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryImagesRef = useRef<GalleryImageState[]>([]);
+
+  useEffect(() => {
+    galleryImagesRef.current = galleryImages;
+  }, [galleryImages]);
 
   useEffect(() => {
     void loadPois();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      galleryImagesRef.current.forEach(revokeGalleryImagePreview);
+    };
   }, []);
 
   async function loadPois() {
@@ -49,6 +117,9 @@ export function PoiWorkspaceClient() {
       const payload = await parseResponse<{ poi: PoiEditorRecord }>(
         await fetch(`/api/admin/pois/${poiId}`, { cache: "no-store" }),
       );
+      replaceGalleryImages(payload.poi.images.map(createPersistedGalleryImage));
+      setRemovedImageIds([]);
+      setDraggedImageId(null);
       setSelectedPoiId(poiId);
       setEditor(payload.poi);
       setStatusMessage(null);
@@ -58,11 +129,35 @@ export function PoiWorkspaceClient() {
     }
   }
 
+  function replaceGalleryImages(nextImages: GalleryImageState[]) {
+    galleryImagesRef.current.forEach(revokeGalleryImagePreview);
+    galleryImagesRef.current = nextImages;
+    setGalleryImages(nextImages);
+  }
+
   function updateEditor(changes: Partial<PoiEditorRecord>) {
     setEditor((current) => ({ ...current, ...changes }));
   }
 
+  function updateGalleryImage(clientId: string, changes: Partial<PoiImageRecord>) {
+    setGalleryImages((current) =>
+      current.map((image) => {
+        if (image.clientId !== clientId) {
+          return image;
+        }
+
+        return {
+          ...image,
+          ...changes,
+        };
+      }),
+    );
+  }
+
   function createNewPoi() {
+    replaceGalleryImages([]);
+    setRemovedImageIds([]);
+    setDraggedImageId(null);
     setSelectedPoiId(null);
     setEditor(createEmptyPoiRecord());
     setStatusMessage("New draft ready.");
@@ -139,6 +234,141 @@ export function PoiWorkspaceClient() {
     }));
   }
 
+  function openFilePicker() {
+    fileInputRef.current?.click();
+  }
+
+  function queueGalleryFiles(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+
+    if (files.length === 0) {
+      return;
+    }
+
+    setGalleryImages((current) => [
+      ...current,
+      ...files.map(createStagedGalleryImage),
+    ]);
+    setStatusMessage(selectedPoiId ? "Images queued for save." : "Images staged. Save the POI to upload them.");
+    setErrorMessage(null);
+    event.target.value = "";
+  }
+
+  function removeGalleryImage(clientId: string) {
+    const imageToRemove = galleryImages.find((image) => image.clientId === clientId);
+
+    if (!imageToRemove) {
+      return;
+    }
+
+    if (imageToRemove.file) {
+      revokeGalleryImagePreview(imageToRemove);
+    }
+
+    const imageId = imageToRemove.id;
+
+    if (imageId) {
+      setRemovedImageIds((current) =>
+        current.includes(imageId) ? current : [...current, imageId],
+      );
+    }
+
+    setGalleryImages((current) => current.filter((image) => image.clientId !== clientId));
+  }
+
+  function moveGalleryImage(sourceClientId: string, targetClientId: string) {
+    if (sourceClientId === targetClientId) {
+      return;
+    }
+
+    setGalleryImages((current) => {
+      const sourceIndex = current.findIndex((image) => image.clientId === sourceClientId);
+      const targetIndex = current.findIndex((image) => image.clientId === targetClientId);
+
+      if (sourceIndex === -1 || targetIndex === -1) {
+        return current;
+      }
+
+      const nextImages = [...current];
+      const [movedImage] = nextImages.splice(sourceIndex, 1);
+      nextImages.splice(targetIndex, 0, movedImage);
+      return nextImages;
+    });
+  }
+
+  async function syncPoiImages(poiId: string) {
+    let workingImages = [...galleryImages];
+
+    for (const image of workingImages) {
+      if (!image.file) {
+        continue;
+      }
+
+      const formData = new FormData();
+      formData.set("file", image.file);
+      formData.set("altText", image.altText);
+      formData.set("caption", image.caption);
+
+      const payload = await parseResponse<{ image: PoiImageRecord }>(
+        await fetch(`/api/admin/pois/${poiId}/media`, {
+          method: "POST",
+          body: formData,
+        }),
+      );
+
+      revokeGalleryImagePreview(image);
+      workingImages = workingImages.map((current) => {
+        if (current.clientId !== image.clientId) {
+          return current;
+        }
+
+        return {
+          ...createPersistedGalleryImage(payload.image),
+          clientId: image.clientId,
+        };
+      });
+    }
+
+    for (const mediaId of removedImageIds) {
+      const response = await fetch(`/api/admin/pois/${poiId}/media/${mediaId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? "Unable to remove image.");
+      }
+    }
+
+    const syncPayload = await parseResponse<{ images: PoiImageRecord[] }>(
+      await fetch(`/api/admin/pois/${poiId}/media`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          images: workingImages
+            .filter(isPersistedGalleryImage)
+            .map((image) => ({
+              id: image.id,
+              altText: image.altText,
+              caption: image.caption,
+            })),
+        }),
+      }),
+    );
+
+    const nextImages = syncPayload.images.map(createPersistedGalleryImage);
+    galleryImagesRef.current = nextImages;
+    setGalleryImages(nextImages);
+    setRemovedImageIds([]);
+    setDraggedImageId(null);
+    setEditor((current) => ({
+      ...current,
+      images: syncPayload.images,
+    }));
+  }
+
   function savePoi() {
     startTransition(() => {
       void (async () => {
@@ -148,11 +378,18 @@ export function PoiWorkspaceClient() {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(editor),
+            body: JSON.stringify({
+              ...editor,
+              images: galleryImages.map(toEditorImage),
+            }),
           });
 
           const payload = await parseResponse<{ id?: string }>(response);
           const nextPoiId = selectedPoiId ?? payload.id ?? null;
+
+          if (nextPoiId) {
+            await syncPoiImages(nextPoiId);
+          }
 
           await loadPois();
 
@@ -187,6 +424,9 @@ export function PoiWorkspaceClient() {
           }
 
           await loadPois();
+          replaceGalleryImages([]);
+          setRemovedImageIds([]);
+          setDraggedImageId(null);
           setSelectedPoiId(null);
           setEditor(createEmptyPoiRecord());
           setStatusMessage("POI deleted.");
@@ -196,6 +436,23 @@ export function PoiWorkspaceClient() {
         }
       })();
     });
+  }
+
+  function handleImageDragStart(clientId: string) {
+    setDraggedImageId(clientId);
+  }
+
+  function handleImageDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+  }
+
+  function handleImageDrop(targetClientId: string) {
+    if (!draggedImageId) {
+      return;
+    }
+
+    moveGalleryImage(draggedImageId, targetClientId);
+    setDraggedImageId(null);
   }
 
   return (
@@ -224,7 +481,7 @@ export function PoiWorkspaceClient() {
               className={`rounded-[1.25rem] border px-4 py-3 text-left transition ${selectedPoiId === poi.id ? "border-lagoon bg-white text-ink" : "border-line bg-white/60 text-ink-soft hover:bg-white"}`}
             >
               <p className="text-sm font-semibold text-ink">{poi.name}</p>
-              <p className="mt-1 text-xs uppercase tracking-[0.18em] text-lagoon-strong">{poi.poiKind}</p>
+              <p className="mt-1 text-xs uppercase tracking-[0.18em] text-lagoon-strong">{getRecordTypeLabel(poi.poiKind)}</p>
               <p className="mt-2 text-sm">{poi.municipality || "Municipality pending"}</p>
             </button>
           ))}
@@ -239,9 +496,9 @@ export function PoiWorkspaceClient() {
       <section className="card-surface rounded-[1.5rem] p-5">
         <div className="flex flex-col gap-4 border-b border-line pb-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="eyebrow">POI editor</p>
+            <p className="eyebrow">Map point editor</p>
             <h1 className="mt-3 text-3xl font-semibold text-ink">
-              {selectedPoiId ? `Editing ${editor.name || editor.slug}` : "Create a curated POI"}
+              {selectedPoiId ? `Editing ${editor.name || editor.slug}` : "Create a curated map point"}
             </h1>
           </div>
           <div className="text-sm text-ink-soft">
@@ -261,10 +518,10 @@ export function PoiWorkspaceClient() {
               <input value={editor.slug} onChange={(event) => updateEditor({ slug: event.target.value })} className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
             </label>
             <label className="grid gap-2 text-sm text-ink-soft">
-              Type
+              Record type
               <select value={editor.poiKind} onChange={(event) => updateEditor({ poiKind: event.target.value as PoiEditorRecord["poiKind"] })} className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none">
-                {poiKinds.map((poiKind) => (
-                  <option key={poiKind} value={poiKind}>{poiKind}</option>
+                {recordTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
             </label>
@@ -304,6 +561,113 @@ export function PoiWorkspaceClient() {
               Booking URL
               <input value={editor.bookingUrl} onChange={(event) => updateEditor({ bookingUrl: event.target.value })} className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
             </label>
+          </section>
+
+          <section className="grid gap-4 rounded-[1.5rem] border border-line bg-white/50 p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="eyebrow">Images</p>
+                <p className="mt-2 text-sm leading-7 text-ink-soft">
+                  Upload image files into Supabase Storage, drag to reorder them, and keep the first image as the thumbnail.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={queueGalleryFiles}
+                  className="hidden"
+                />
+                <button type="button" onClick={openFilePicker} disabled={isPending} className="rounded-full border border-line bg-white px-4 py-2 text-sm font-semibold text-ink disabled:opacity-60">
+                  Add images
+                </button>
+              </div>
+            </div>
+
+            {!selectedPoiId && galleryImages.some((image) => image.file) && (
+              <div className="rounded-[1.25rem] border border-dashed border-line bg-white px-4 py-3 text-sm text-ink-soft">
+                New POIs stage selected files locally. Save once to create the record and upload the queued images.
+              </div>
+            )}
+
+            <div className="grid gap-3">
+              {galleryImages.length === 0 && (
+                <div className="rounded-[1.25rem] border border-dashed border-line px-4 py-4 text-sm text-ink-soft">
+                  No images added yet.
+                </div>
+              )}
+
+              {galleryImages.map((image, index) => (
+                <div
+                  key={image.clientId}
+                  draggable
+                  onDragStart={() => handleImageDragStart(image.clientId)}
+                  onDragEnd={() => setDraggedImageId(null)}
+                  onDragOver={handleImageDragOver}
+                  onDrop={() => handleImageDrop(image.clientId)}
+                  className={`grid gap-4 rounded-[1.25rem] border bg-white px-4 py-4 lg:grid-cols-[220px_1fr] ${draggedImageId === image.clientId ? "border-lagoon shadow-[0_0_0_1px_rgba(19,94,121,0.18)]" : "border-line"}`}
+                >
+                  <div className="grid gap-3">
+                    <div className="relative overflow-hidden rounded-[1.25rem] border border-line bg-sand/40">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={image.url} alt={image.altText || ""} className="aspect-[4/3] h-full w-full object-cover" />
+                      <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                        {index === 0 && (
+                          <span className="rounded-full bg-lagoon px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-foam">
+                            Thumbnail
+                          </span>
+                        )}
+                        {image.file && (
+                          <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink">
+                            Staged
+                          </span>
+                        )}
+                        {!image.file && !image.storagePath && (
+                          <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-ink">
+                            Legacy URL
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-ink-soft">
+                      Drag to reorder. The first image is always used as the POI thumbnail.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 content-start">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-ink">Image {index + 1}</p>
+                      <button type="button" onClick={() => removeGalleryImage(image.clientId)} className="rounded-full border border-[#b95c5c] bg-white px-4 py-2 text-sm font-semibold text-[#9c2d2d]">
+                        Remove
+                      </button>
+                    </div>
+                    <label className="grid gap-2 text-sm text-ink-soft">
+                      Alt text
+                      <input
+                        value={image.altText}
+                        onChange={(event) => updateGalleryImage(image.clientId, { altText: event.target.value })}
+                        placeholder="Describe the image for accessibility"
+                        className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none"
+                      />
+                    </label>
+                    <label className="grid gap-2 text-sm text-ink-soft">
+                      Caption
+                      <input
+                        value={image.caption}
+                        onChange={(event) => updateGalleryImage(image.clientId, { caption: event.target.value })}
+                        placeholder="Optional gallery caption"
+                        className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none"
+                      />
+                    </label>
+                    <div className="rounded-[1.25rem] border border-line bg-sand/30 px-4 py-3 text-sm text-ink-soft break-all">
+                      {image.file ? image.file.name : image.url}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </section>
 
           <section className="grid gap-4 rounded-[1.5rem] border border-line bg-white/50 p-4">
@@ -377,6 +741,54 @@ export function PoiWorkspaceClient() {
             <input value={editor.activityProfile.crowdIntensity} onChange={(event) => setEditor((current) => ({ ...current, activityProfile: { ...current.activityProfile, crowdIntensity: event.target.value } }))} placeholder="Crowd intensity" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
             <input value={editor.activityProfile.weatherSensitivity} onChange={(event) => setEditor((current) => ({ ...current, activityProfile: { ...current.activityProfile, weatherSensitivity: event.target.value } }))} placeholder="Weather sensitivity" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
           </section>
+
+          {editor.poiKind === "food" && (
+            <section className="grid gap-4 rounded-[1.5rem] border border-line bg-white/50 p-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="md:col-span-2 xl:col-span-4">
+                <p className="eyebrow">Food metadata</p>
+                <p className="mt-2 text-sm leading-7 text-ink-soft">Restaurant-specific planning data for dining stops.</p>
+              </div>
+              <input value={editor.foodProfile.cuisineTypes} onChange={(event) => setEditor((current) => ({ ...current, foodProfile: { ...current.foodProfile, cuisineTypes: event.target.value } }))} placeholder="Cuisine types, comma separated" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none xl:col-span-2" />
+              <input value={editor.foodProfile.diningStyle} onChange={(event) => setEditor((current) => ({ ...current, foodProfile: { ...current.foodProfile, diningStyle: event.target.value } }))} placeholder="Dining style" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
+              <input value={editor.foodProfile.priceBand} onChange={(event) => setEditor((current) => ({ ...current, foodProfile: { ...current.foodProfile, priceBand: event.target.value } }))} placeholder="Price band" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
+              <input value={editor.foodProfile.menuUrl} onChange={(event) => setEditor((current) => ({ ...current, foodProfile: { ...current.foodProfile, menuUrl: event.target.value } }))} placeholder="Menu URL" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none xl:col-span-2" />
+              <label className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink-soft"><input checked={editor.foodProfile.patio} onChange={(event) => setEditor((current) => ({ ...current, foodProfile: { ...current.foodProfile, patio: event.target.checked } }))} type="checkbox" /> Patio</label>
+              <label className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink-soft"><input checked={editor.foodProfile.takeoutAvailable} onChange={(event) => setEditor((current) => ({ ...current, foodProfile: { ...current.foodProfile, takeoutAvailable: event.target.checked } }))} type="checkbox" /> Takeout available</label>
+              <label className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink-soft"><input checked={editor.foodProfile.reservationRecommended} onChange={(event) => setEditor((current) => ({ ...current, foodProfile: { ...current.foodProfile, reservationRecommended: event.target.checked } }))} type="checkbox" /> Reservation recommended</label>
+            </section>
+          )}
+
+          {editor.poiKind === "accommodation" && (
+            <section className="grid gap-4 rounded-[1.5rem] border border-line bg-white/50 p-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="md:col-span-2 xl:col-span-4">
+                <p className="eyebrow">Accommodation metadata</p>
+                <p className="mt-2 text-sm leading-7 text-ink-soft">Capacity and stay-type fields for lodging stops.</p>
+              </div>
+              <input value={editor.accommodationProfile.accommodationType} onChange={(event) => setEditor((current) => ({ ...current, accommodationProfile: { ...current.accommodationProfile, accommodationType: event.target.value } }))} placeholder="Accommodation type" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
+              <input value={editor.accommodationProfile.capacityMin} onChange={(event) => setEditor((current) => ({ ...current, accommodationProfile: { ...current.accommodationProfile, capacityMin: event.target.value } }))} placeholder="Minimum capacity" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
+              <input value={editor.accommodationProfile.capacityMax} onChange={(event) => setEditor((current) => ({ ...current, accommodationProfile: { ...current.accommodationProfile, capacityMax: event.target.value } }))} placeholder="Maximum capacity" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
+              <div className="grid gap-3 xl:col-span-4 xl:grid-cols-4">
+                <label className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink-soft"><input checked={editor.accommodationProfile.roofed} onChange={(event) => setEditor((current) => ({ ...current, accommodationProfile: { ...current.accommodationProfile, roofed: event.target.checked } }))} type="checkbox" /> Roofed</label>
+                <label className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink-soft"><input checked={editor.accommodationProfile.glamping} onChange={(event) => setEditor((current) => ({ ...current, accommodationProfile: { ...current.accommodationProfile, glamping: event.target.checked } }))} type="checkbox" /> Glamping</label>
+                <label className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink-soft"><input checked={editor.accommodationProfile.camping} onChange={(event) => setEditor((current) => ({ ...current, accommodationProfile: { ...current.accommodationProfile, camping: event.target.checked } }))} type="checkbox" /> Camping</label>
+                <label className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink-soft"><input checked={editor.accommodationProfile.directBooking} onChange={(event) => setEditor((current) => ({ ...current, accommodationProfile: { ...current.accommodationProfile, directBooking: event.target.checked } }))} type="checkbox" /> Direct booking</label>
+              </div>
+            </section>
+          )}
+
+          {editor.poiKind === "logistics" && (
+            <section className="grid gap-4 rounded-[1.5rem] border border-line bg-white/50 p-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="md:col-span-2 xl:col-span-4">
+                <p className="eyebrow">Logistics metadata</p>
+                <p className="mt-2 text-sm leading-7 text-ink-soft">Fuel, charging, water, and survival-layer details.</p>
+              </div>
+              <input value={editor.logisticsProfile.logisticsType} onChange={(event) => setEditor((current) => ({ ...current, logisticsProfile: { ...current.logisticsProfile, logisticsType: event.target.value } }))} placeholder="Logistics type" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
+              <input value={editor.logisticsProfile.fuelTypes} onChange={(event) => setEditor((current) => ({ ...current, logisticsProfile: { ...current.logisticsProfile, fuelTypes: event.target.value } }))} placeholder="Fuel types, comma separated" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none xl:col-span-2" />
+              <input value={editor.logisticsProfile.chargerTypes} onChange={(event) => setEditor((current) => ({ ...current, logisticsProfile: { ...current.logisticsProfile, chargerTypes: event.target.value } }))} placeholder="Charger types, comma separated" className="rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink outline-none" />
+              <label className="flex items-center gap-2 rounded-2xl border border-line bg-white px-3 py-2 text-sm text-ink-soft"><input checked={editor.logisticsProfile.potableWater} onChange={(event) => setEditor((current) => ({ ...current, logisticsProfile: { ...current.logisticsProfile, potableWater: event.target.checked } }))} type="checkbox" /> Potable water</label>
+              <textarea value={editor.logisticsProfile.seasonalNotes} onChange={(event) => setEditor((current) => ({ ...current, logisticsProfile: { ...current.logisticsProfile, seasonalNotes: event.target.value } }))} rows={3} placeholder="Seasonal logistics notes" className="rounded-[1.25rem] border border-line bg-white px-3 py-3 text-sm text-ink outline-none md:col-span-2 xl:col-span-4" />
+            </section>
+          )}
         </div>
 
         <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5 md:flex-row md:items-center md:justify-between">

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { SignOutButton } from "@/components/auth/sign-out-button";
+import { getAuthenticatedActor } from "@/lib/supabase/auth";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -7,7 +9,9 @@ const navItems = [
   { href: "/admin", label: "Admin" },
 ];
 
-export default function ProductLayout({ children }: { children: ReactNode }) {
+export default async function ProductLayout({ children }: { children: ReactNode }) {
+  const actor = await getAuthenticatedActor();
+
   return (
     <div className="page-frame flex min-h-screen flex-col py-4 md:py-6">
       <header className="card-surface sticky top-4 z-10 flex items-center justify-between rounded-full px-5 py-3">
@@ -22,6 +26,13 @@ export default function ProductLayout({ children }: { children: ReactNode }) {
               {item.label}
             </Link>
           ))}
+          {actor ? (
+            <SignOutButton />
+          ) : (
+            <Link href="/auth/sign-in?redirectTo=/admin" className="rounded-full border border-line bg-white/70 px-4 py-2 font-semibold text-ink transition hover:bg-white">
+              Sign in
+            </Link>
+          )}
         </nav>
       </header>
       <div className="flex flex-1 flex-col py-6">{children}</div>

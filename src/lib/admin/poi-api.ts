@@ -1,8 +1,12 @@
 import {
   createEmptyPoiRecord,
+  type PoiAccommodationProfileRecord,
   type PoiActivityProfileRecord,
   type PoiEditorRecord,
+  type PoiFoodProfileRecord,
   type PoiHourRecord,
+  type PoiImageRecord,
+  type PoiLogisticsProfileRecord,
   type PoiSummaryRecord,
   type PoiWarningRecord,
 } from "@/lib/admin/poi-records";
@@ -66,6 +70,44 @@ type PoiActivityRow = {
   weather_sensitivity: string | null;
 };
 
+type PoiFoodRow = {
+  cuisine_types: string[] | null;
+  dining_style: string | null;
+  price_band: string | null;
+  menu_url: string | null;
+  patio: boolean;
+  takeout_available: boolean;
+  reservation_recommended: boolean;
+};
+
+type PoiAccommodationRow = {
+  accommodation_type: string | null;
+  capacity_min: number | null;
+  capacity_max: number | null;
+  roofed: boolean;
+  glamping: boolean;
+  camping: boolean;
+  direct_booking: boolean;
+};
+
+type PoiLogisticsRow = {
+  logistics_type: string | null;
+  fuel_types: string[] | null;
+  charger_types: string[] | null;
+  potable_water: boolean;
+  seasonal_notes: string | null;
+};
+
+type PoiMediaRow = {
+  id: string;
+  image_url: string;
+  alt_text: string | null;
+  caption: string | null;
+  is_thumbnail: boolean;
+  sort_order: number;
+  storage_path?: string | null;
+};
+
 export function mapPoiSummary(row: PoiSummaryRow): PoiSummaryRecord {
   return {
     id: row.id,
@@ -83,8 +125,21 @@ export function mapPoiEditorRecord(params: {
   hours: PoiHoursRow[];
   warnings: PoiWarningsRow[];
   activityProfile: PoiActivityRow | null;
+  foodProfile: PoiFoodRow | null;
+  accommodationProfile: PoiAccommodationRow | null;
+  logisticsProfile: PoiLogisticsRow | null;
+  media: PoiMediaRow[];
 }): PoiEditorRecord {
   const baseRecord = createEmptyPoiRecord();
+  const images = [...params.media]
+    .sort((left, right) => {
+      if (left.is_thumbnail !== right.is_thumbnail) {
+        return left.is_thumbnail ? -1 : 1;
+      }
+
+      return left.sort_order - right.sort_order;
+    })
+    .map(mapPoiImage);
 
   return {
     id: params.poi.id,
@@ -113,6 +168,16 @@ export function mapPoiEditorRecord(params: {
     activityProfile: params.activityProfile
       ? mapPoiActivityProfile(params.activityProfile)
       : baseRecord.activityProfile,
+    foodProfile: params.foodProfile
+      ? mapPoiFoodProfile(params.foodProfile)
+      : baseRecord.foodProfile,
+    accommodationProfile: params.accommodationProfile
+      ? mapPoiAccommodationProfile(params.accommodationProfile)
+      : baseRecord.accommodationProfile,
+    logisticsProfile: params.logisticsProfile
+      ? mapPoiLogisticsProfile(params.logisticsProfile)
+      : baseRecord.logisticsProfile,
+    images,
   };
 }
 
@@ -157,6 +222,52 @@ function mapPoiActivityProfile(row: PoiActivityRow): PoiActivityProfileRecord {
   };
 }
 
+function mapPoiFoodProfile(row: PoiFoodRow): PoiFoodProfileRecord {
+  return {
+    cuisineTypes: (row.cuisine_types ?? []).join(", "),
+    diningStyle: row.dining_style ?? "",
+    priceBand: row.price_band ?? "",
+    menuUrl: row.menu_url ?? "",
+    patio: row.patio,
+    takeoutAvailable: row.takeout_available,
+    reservationRecommended: row.reservation_recommended,
+  };
+}
+
+function mapPoiAccommodationProfile(
+  row: PoiAccommodationRow,
+): PoiAccommodationProfileRecord {
+  return {
+    accommodationType: row.accommodation_type ?? "",
+    capacityMin: row.capacity_min?.toString() ?? "",
+    capacityMax: row.capacity_max?.toString() ?? "",
+    roofed: row.roofed,
+    glamping: row.glamping,
+    camping: row.camping,
+    directBooking: row.direct_booking,
+  };
+}
+
+function mapPoiLogisticsProfile(row: PoiLogisticsRow): PoiLogisticsProfileRecord {
+  return {
+    logisticsType: row.logistics_type ?? "",
+    fuelTypes: (row.fuel_types ?? []).join(", "),
+    chargerTypes: (row.charger_types ?? []).join(", "),
+    potableWater: row.potable_water,
+    seasonalNotes: row.seasonal_notes ?? "",
+  };
+}
+
+function mapPoiImage(row: PoiMediaRow): PoiImageRecord {
+  return {
+    id: row.id,
+    url: row.image_url,
+    altText: row.alt_text ?? "",
+    caption: row.caption ?? "",
+    storagePath: row.storage_path ?? undefined,
+  };
+}
+
 export function buildPointValue(latitude: string, longitude: string) {
   return `SRID=4326;POINT(${longitude} ${latitude})`;
 }
@@ -175,4 +286,11 @@ export function toNullableFloat(value: string) {
   }
 
   return Number.parseFloat(value);
+}
+
+export function toTextArray(value: string) {
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 }
